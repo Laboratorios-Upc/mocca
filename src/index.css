@@ -58,15 +58,58 @@ h1, h2, h3, .font-serif {
   animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* Dynamic viewport height scaling for Bouquet - Perfectly centered on any screen */
+/* Dynamic viewport height scaling for Bouquet - Perfectly centered with breathing room on all screens */
 .bouquet-viewport-container {
-  width: min(88vw, 480px);
-  height: min(82vh, min(82dvh, 640px));
-  aspect-ratio: 4 / 5.7;
+  width: min(85vw, 440px);
+  height: min(72vh, min(72dvh, 580px));
+  aspect-ratio: 400 / 570;
   display: flex;
   align-items: center;
   justify-content: center;
   margin: auto;
+  transition: transform 0.3s ease, width 0.3s ease, height 0.3s ease;
+}
+
+/* Tablet screens */
+@media (max-width: 768px) {
+  .bouquet-viewport-container {
+    width: min(80vw, 360px);
+    height: min(64vh, min(64dvh, 480px));
+  }
+}
+
+/* Mobile Devices (Portrait phones like iPhone, Pixel, Galaxy) */
+@media (max-width: 640px) {
+  .bouquet-viewport-container {
+    width: min(75vw, 300px);
+    height: min(56vh, min(56dvh, 420px));
+    transform: scale(0.92);
+  }
+}
+
+/* Small / Narrow Mobile Screens (e.g. iPhone SE, compact devices) */
+@media (max-width: 390px) {
+  .bouquet-viewport-container {
+    width: min(70vw, 260px);
+    height: min(50vh, min(50dvh, 370px));
+    transform: scale(0.85);
+  }
+}
+
+/* Short height screens (e.g. landscape mode or compact viewports) */
+@media (max-height: 700px) {
+  .bouquet-viewport-container {
+    height: min(54vh, min(54dvh, 380px));
+    width: auto;
+  }
+}
+
+@media (max-height: 520px) {
+  .bouquet-viewport-container {
+    height: min(48vh, min(48dvh, 290px));
+    width: auto;
+    transform: scale(0.8);
+  }
 }
 
 /* Utility classes */
@@ -151,21 +194,6 @@ h1, h2, h3, .font-serif {
 .max-w-md { max-width: 28rem; }
 .max-w-lg { max-width: 32rem; }
 .max-w-2xl { max-width: 42rem; }
-
-/* Dynamic viewport height scaling for Bouquet */
-.bouquet-viewport-container {
-  height: 62vh;
-  max-height: 520px;
-  width: auto;
-  aspect-ratio: 4/5;
-}
-
-@media (max-height: 650px) {
-  .bouquet-viewport-container {
-    height: 56vh;
-    max-height: 400px;
-  }
-}
 
 .rounded-full { border-radius: 9999px; }
 .rounded-lg { border-radius: 0.5rem; }
