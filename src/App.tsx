@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
-import { Camera, Sparkles } from 'lucide-react';
+import { Camera, Sparkles, Heart } from 'lucide-react';
 import { Buquet } from './components/Buquet';
 import type { FlowerInfo } from './components/Buquet';
 import { PollenParticles } from './components/PollenParticles';
 import { PetalCascadeOverlay } from './components/PetalCascadeOverlay';
 import { PolaroidCarousel } from './components/PolaroidCarousel';
+import { CartaPropuestaModal } from './components/CartaPropuestaModal';
+import { MusicPlayerWidget } from './components/MusicPlayerWidget';
 import { INITIAL_PHOTOS } from './data/photos';
 
 export function App() {
@@ -13,6 +15,7 @@ export function App() {
   const [resetTrigger, setResetTrigger] = useState<number>(0);
   const [mousePos, setMousePos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isCarouselOpen, setIsCarouselOpen] = useState<boolean>(false);
+  const [isCartaOpen, setIsCartaOpen] = useState<boolean>(false);
 
   // Global mouse / touch movement tracking with requestAnimationFrame throttling
   useEffect(() => {
@@ -134,7 +137,7 @@ export function App() {
       {/* Floating Pollen Particles Overlay */}
       <PollenParticles />
 
-      {/* --- TOP FLOATING BUTTONS BAR (FOTOS) --- */}
+      {/* --- TOP FLOATING BUTTONS BAR (FOTOS, PÉTALOS, CARTA) --- */}
       <div
         style={{
           position: 'fixed',
@@ -176,6 +179,7 @@ export function App() {
           }}
           onMouseDown={(e) => (e.currentTarget.style.transform = 'scale(0.95)')}
           onMouseUp={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+          title="Ver fotos"
         >
           <Camera size={16} />
           <span>Fotos</span>
@@ -214,6 +218,33 @@ export function App() {
         >
           <Sparkles size={16} />
         </button>
+
+        {/* Carta Pop-up Button (al costado derecho del botón de confeti) */}
+        <button
+          id="btn-carta-propuesta"
+          onClick={() => setIsCartaOpen(true)}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '8px 14px',
+            borderRadius: '9999px',
+            backgroundColor: '#f0fdf4',
+            color: '#15803d',
+            fontSize: '13px',
+            fontWeight: 700,
+            border: '1px solid #bbf7d0',
+            boxShadow: '0 2px 8px rgba(34, 197, 94, 0.18)',
+            cursor: 'pointer',
+            transition: 'transform 0.15s, background-color 0.15s',
+          }}
+          onMouseDown={(e) => (e.currentTarget.style.transform = 'scale(0.95)')}
+          onMouseUp={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+          title="Carta para Marci 💚"
+        >
+          <Heart size={15} style={{ fill: '#22c55e', color: '#22c55e' }} />
+          <span>Carta</span>
+        </button>
       </div>
 
       {/* Main Interactive Bouquet Canvas - Centered Full Screen */}
@@ -244,6 +275,15 @@ export function App() {
         isOpen={isCarouselOpen}
         onClose={() => setIsCarouselOpen(false)}
       />
+
+      {/* Carta Pop-up Modal con Propuesta */}
+      <CartaPropuestaModal
+        isOpen={isCartaOpen}
+        onClose={() => setIsCartaOpen(false)}
+      />
+
+      {/* Floating Background Music Widget (Esquina inferior derecha - apagado por defecto) */}
+      <MusicPlayerWidget src="/assets/audio/pista.mp3" />
     </div>
   );
 }
