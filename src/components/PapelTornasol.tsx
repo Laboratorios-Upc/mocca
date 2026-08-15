@@ -124,7 +124,7 @@ export const PapelTornasol: React.FC<PapelTornasolProps> = React.memo(({
           opacity="0.95"
         />
 
-        {/* 3. Pastel Pink & Yellow Organic Holographic Swirls (Matches OpenReplay Hero Image) */}
+        {/* 3. Pastel Pink & Yellow Organic Holographic Swirls */}
         <path
           d="M 120 220 Q 200 240 280 220 L 245 470 Q 200 485 155 470 Z"
           fill="url(#holoSwirlPinkYellow)"
@@ -161,4 +161,3 @@ export const PapelTornasol: React.FC<PapelTornasolProps> = React.memo(({
 });
 
 PapelTornasol.displayName = 'PapelTornasol';
-

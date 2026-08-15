@@ -1,14 +1,18 @@
 import { useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
+import { Camera, Sparkles } from 'lucide-react';
 import { Buquet } from './components/Buquet';
 import type { FlowerInfo } from './components/Buquet';
 import { PollenParticles } from './components/PollenParticles';
 import { PetalCascadeOverlay } from './components/PetalCascadeOverlay';
+import { PolaroidCarousel } from './components/PolaroidCarousel';
+import { INITIAL_PHOTOS } from './data/photos';
 
 export function App() {
   const [bloomingFlowerId, setBloomingFlowerId] = useState<string | null>(null);
   const [resetTrigger, setResetTrigger] = useState<number>(0);
   const [mousePos, setMousePos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [isCarouselOpen, setIsCarouselOpen] = useState<boolean>(false);
 
   // Global mouse / touch movement tracking with requestAnimationFrame throttling
   useEffect(() => {
@@ -73,7 +77,7 @@ export function App() {
     });
   };
 
-  // Direct flower click interaction (bloom bounce + petal burst without popups)
+  // Direct flower click interaction
   const handleSelectFlower = (flower: FlowerInfo) => {
     setBloomingFlowerId(flower.id);
     triggerPetalShower();
@@ -82,7 +86,7 @@ export function App() {
     }, 1500);
   };
 
-  // Reset to default base position (flowers inside paper wrap) when clicking background
+  // Reset to default base position when clicking background
   const handleBackgroundClick = () => {
     setBloomingFlowerId(null);
     setResetTrigger((prev) => prev + 1);
@@ -91,9 +95,19 @@ export function App() {
   return (
     <div
       style={{
+        position: 'relative',
+        width: '100vw',
+        height: '100vh',
+        minHeight: '100dvh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 0,
+        margin: 0,
+        overflow: 'hidden',
+        userSelect: 'none',
         background: 'linear-gradient(135deg, #fff7ed 0%, #e0f2fe 50%, #ffe4e6 100%)',
       }}
-      className="relative w-full h-full min-h-[100dvh] flex items-center justify-center p-0 duration-1000 overflow-hidden select-none cursor-pointer"
       onClick={handleBackgroundClick}
     >
       {/* Full-Screen Hydrangea Petal Curtain Cascade on Page Load */}
@@ -101,18 +115,119 @@ export function App() {
 
       {/* Background Ambient Glow Orbs reacting to mouse/touch movement */}
       <div
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[450px] sm:w-[650px] h-[450px] sm:h-[650px] bg-gradient-to-tr from-pink-300/30 via-sky-300/30 to-amber-200/30 rounded-full blur-3xl pointer-events-none transition-transform duration-300"
         style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          width: '550px',
+          height: '550px',
+          background:
+            'radial-gradient(circle, rgba(244,114,182,0.25) 0%, rgba(56,189,248,0.2) 50%, rgba(254,240,138,0.15) 100%)',
+          borderRadius: '9999px',
+          filter: 'blur(70px)',
+          pointerEvents: 'none',
           transform: `translate(calc(-50% + ${mousePos.x * 35}px), calc(-50% + ${mousePos.y * 35}px))`,
+          transition: 'transform 0.3s ease-out',
         }}
       />
 
       {/* Floating Pollen Particles Overlay */}
       <PollenParticles />
 
+      {/* --- TOP FLOATING BUTTONS BAR (FOTOS) --- */}
+      <div
+        style={{
+          position: 'fixed',
+          top: '18px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 100,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          padding: '6px 12px',
+          backgroundColor: 'rgba(255, 255, 255, 0.85)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          borderRadius: '9999px',
+          boxShadow: '0 12px 30px -4px rgba(0, 0, 0, 0.15), 0 4px 10px -2px rgba(0, 0, 0, 0.08)',
+          border: '1px solid rgba(255, 255, 255, 0.9)',
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Main Photo Album Button (Polaroid Carousel) */}
+        <button
+          id="btn-fotos-polaroid"
+          onClick={() => setIsCarouselOpen(true)}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '8px 16px',
+            borderRadius: '9999px',
+            background: 'linear-gradient(135deg, #ec4899 0%, #f43f5e 100%)',
+            color: '#ffffff',
+            fontSize: '13px',
+            fontWeight: 700,
+            boxShadow: '0 4px 12px rgba(244, 63, 94, 0.35)',
+            border: 'none',
+            cursor: 'pointer',
+            transition: 'transform 0.15s, opacity 0.15s',
+          }}
+          onMouseDown={(e) => (e.currentTarget.style.transform = 'scale(0.95)')}
+          onMouseUp={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+        >
+          <Camera size={16} />
+          <span>Fotos</span>
+          <span
+            style={{
+              padding: '2px 7px',
+              borderRadius: '9999px',
+              backgroundColor: 'rgba(255, 255, 255, 0.28)',
+              fontSize: '11px',
+              fontWeight: 800,
+            }}
+          >
+            {INITIAL_PHOTOS.length}
+          </span>
+        </button>
+
+        {/* Petal confetti trigger */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            triggerPetalShower();
+          }}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '8px',
+            borderRadius: '9999px',
+            backgroundColor: '#ffffff',
+            color: '#f59e0b',
+            border: '1px solid #fef3c7',
+            cursor: 'pointer',
+            boxShadow: '0 2px 5px rgba(0, 0, 0, 0.05)',
+          }}
+          title="Lluvia de Pétalos"
+        >
+          <Sparkles size={16} />
+        </button>
+      </div>
+
       {/* Main Interactive Bouquet Canvas - Centered Full Screen */}
       <main
-        className="relative z-10 w-full h-full flex items-center justify-center overflow-hidden"
+        style={{
+          position: 'relative',
+          zIndex: 10,
+          width: '100%',
+          height: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          overflow: 'hidden',
+        }}
         onClick={handleBackgroundClick}
       >
         <Buquet
@@ -123,6 +238,12 @@ export function App() {
           resetTrigger={resetTrigger}
         />
       </main>
+
+      {/* Polaroid Photos Carousel Modal */}
+      <PolaroidCarousel
+        isOpen={isCarouselOpen}
+        onClose={() => setIsCarouselOpen(false)}
+      />
     </div>
   );
 }
