@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, type Variants } from 'framer-motion';
 import {
   ChevronLeft,
   ChevronRight,
@@ -90,7 +90,7 @@ export const PolaroidCarousel: React.FC<PolaroidCarouselProps> = ({
   if (!isOpen) return null;
 
   // Slide animation variants for Polaroid cards
-  const slideVariants = {
+  const slideVariants: Variants = {
     enter: (dir: number) => ({
       x: dir > 0 ? 100 : -100,
       opacity: 0,
@@ -103,7 +103,7 @@ export const PolaroidCarousel: React.FC<PolaroidCarouselProps> = ({
       scale: 1,
       rotate: activePhoto.rotation || 0,
       transition: {
-        x: { type: 'spring', stiffness: 300, damping: 28 },
+        x: { type: 'spring' as const, stiffness: 300, damping: 28 },
         opacity: { duration: 0.25 },
         scale: { duration: 0.3 },
         rotate: { duration: 0.3 },
@@ -115,7 +115,7 @@ export const PolaroidCarousel: React.FC<PolaroidCarouselProps> = ({
       scale: 0.9,
       rotate: dir > 0 ? -6 : 6,
       transition: {
-        x: { type: 'spring', stiffness: 300, damping: 28 },
+        x: { type: 'spring' as const, stiffness: 300, damping: 28 },
         opacity: { duration: 0.2 },
       },
     }),
