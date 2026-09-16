@@ -11,7 +11,7 @@ import {
   Minimize2,
 } from 'lucide-react';
 import type { PhotoItem } from '../data/photos';
-import { INITIAL_PHOTOS } from '../data/photos';
+import { INITIAL_PHOTOS, fetchPhotosFromSupabase } from '../data/photos';
 
 interface PolaroidCarouselProps {
   isOpen: boolean;
@@ -35,6 +35,19 @@ export const PolaroidCarousel: React.FC<PolaroidCarouselProps> = ({
   useEffect(() => {
     setPhotoList(photos);
   }, [photos]);
+
+  // Carga automática desde Supabase al iniciar o abrir el carrusel
+  useEffect(() => {
+    let isMounted = true;
+    fetchPhotosFromSupabase().then((remotePhotos) => {
+      if (isMounted && remotePhotos && remotePhotos.length > 0) {
+        setPhotoList(remotePhotos);
+      }
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, [isOpen]);
 
   const totalPhotos = photoList.length;
 
