@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
-import { Camera, Sparkles, Heart } from 'lucide-react';
+import { Camera, Sparkles, Heart, Sun } from 'lucide-react';
 import { Buquet } from './components/Buquet';
 import type { FlowerInfo } from './components/Buquet';
 import { PollenParticles } from './components/PollenParticles';
@@ -8,7 +8,12 @@ import { PetalCascadeOverlay } from './components/PetalCascadeOverlay';
 import { PolaroidCarousel } from './components/PolaroidCarousel';
 import { CartaPropuestaModal } from './components/CartaPropuestaModal';
 import { MusicPlayerWidget } from './components/MusicPlayerWidget';
+import { RamoPrimaveraModal } from './components/RamoPrimaveraModal';
+import { useSpringEvent } from './hooks/useSpringEvent';
 import { INITIAL_PHOTOS } from './data/photos';
+
+/** Marca de que el ramo ya se abrió solo una vez, para no repetirlo en cada recarga. */
+const SPRING_AUTO_OPEN_KEY = 'mocca:primavera-2026:auto-abierto';
 
 export function App() {
   const [bloomingFlowerId, setBloomingFlowerId] = useState<string | null>(null);
@@ -16,6 +21,34 @@ export function App() {
   const [mousePos, setMousePos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isCarouselOpen, setIsCarouselOpen] = useState<boolean>(false);
   const [isCartaOpen, setIsCartaOpen] = useState<boolean>(false);
+  const [isRamoPrimaveraOpen, setIsRamoPrimaveraOpen] = useState<boolean>(false);
+
+  // Evento del 21 de septiembre (anclado a UTC-5, no a la zona horaria del equipo)
+  const { phase: springPhase } = useSpringEvent();
+
+  // Al entrar el 21 el ramo se despliega solo, una única vez.
+  useEffect(() => {
+    if (springPhase !== 'live') return;
+
+    let alreadyOpened = false;
+    try {
+      alreadyOpened = window.localStorage.getItem(SPRING_AUTO_OPEN_KEY) === '1';
+    } catch {
+      // Modo privado / storage bloqueado: mejor mostrarlo que perdérselo.
+    }
+    if (alreadyOpened) return;
+
+    const timerId = window.setTimeout(() => {
+      setIsRamoPrimaveraOpen(true);
+      try {
+        window.localStorage.setItem(SPRING_AUTO_OPEN_KEY, '1');
+      } catch {
+        // Sin storage: se volverá a abrir en la próxima visita. No es grave.
+      }
+    }, 900);
+
+    return () => window.clearTimeout(timerId);
+  }, [springPhase]);
 
   // Global mouse / touch movement tracking with requestAnimationFrame throttling
   useEffect(() => {
@@ -147,6 +180,11 @@ export function App() {
           zIndex: 100,
           display: 'flex',
           alignItems: 'center',
+          justifyContent: 'center',
+          flexWrap: 'wrap',
+          // En celular, con el botón de primavera, la barra ya no cabe en una línea
+          maxWidth: 'calc(100vw - 20px)',
+          rowGap: '6px',
           gap: '8px',
           padding: '6px 12px',
           backgroundColor: 'rgba(255, 255, 255, 0.85)',
@@ -245,6 +283,48 @@ export function App() {
           <Heart size={15} style={{ fill: '#22c55e', color: '#22c55e' }} />
           <span>Carta</span>
         </button>
+
+        {/* Botón del evento de primavera: dorado el 21, discreto como recuerdo después */}
+        {springPhase !== 'before' && (
+          <button
+            id="btn-ramo-primavera"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsRamoPrimaveraOpen(true);
+            }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: springPhase === 'live' ? '8px 14px' : '8px 12px',
+              borderRadius: '9999px',
+              background:
+                springPhase === 'live'
+                  ? 'linear-gradient(135deg, #FACC15 0%, #F59E0B 100%)'
+                  : 'rgba(255, 251, 235, 0.95)',
+              color: springPhase === 'live' ? '#4A2B00' : '#B45309',
+              fontSize: '13px',
+              fontWeight: 700,
+              border: springPhase === 'live' ? 'none' : '1px solid #FDE68A',
+              boxShadow:
+                springPhase === 'live'
+                  ? '0 4px 14px rgba(245, 158, 11, 0.45)'
+                  : '0 2px 6px rgba(0, 0, 0, 0.05)',
+              cursor: 'pointer',
+              transition: 'transform 0.15s',
+            }}
+            onMouseDown={(e) => (e.currentTarget.style.transform = 'scale(0.95)')}
+            onMouseUp={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+            title={
+              springPhase === 'live'
+                ? 'Flores amarillas de primavera 🌼'
+                : 'Recuerdo del 21 de septiembre'
+            }
+          >
+            <Sun size={15} style={{ color: springPhase === 'live' ? '#4A2B00' : '#EAB308' }} />
+            <span>{springPhase === 'live' ? 'Primavera' : 'Recuerdo'}</span>
+          </button>
+        )}
       </div>
 
       {/* Main Interactive Bouquet Canvas - Centered Full Screen */}
@@ -280,6 +360,13 @@ export function App() {
       <CartaPropuestaModal
         isOpen={isCartaOpen}
         onClose={() => setIsCartaOpen(false)}
+      />
+
+      {/* Ramo de flores amarillas — solo el 21 de septiembre (UTC-5) */}
+      <RamoPrimaveraModal
+        isOpen={isRamoPrimaveraOpen}
+        onClose={() => setIsRamoPrimaveraOpen(false)}
+        isMemory={springPhase === 'after'}
       />
 
       {/* Floating Background Music Widget (Esquina inferior derecha - apagado por defecto) */}

@@ -6,7 +6,7 @@ interface LirioProps {
   y?: number;
   scale?: number;
   rotate?: number;
-  colorScheme?: 'pink' | 'orange' | 'white' | 'crimson';
+  colorScheme?: 'pink' | 'orange' | 'white' | 'crimson' | 'yellow';
   delay?: number;
   windFactor?: number;
   onClick?: () => void;
@@ -61,6 +61,19 @@ export const Lirio: React.FC<LirioProps> = React.memo(({
       dots: '#2B0006',
       stamen: '#8B4513',
       pollen: '#FF8C00',
+    },
+    // Amarillo primavera — las flores del 21 de septiembre.
+    // Ojo con el orden del degradado (ver tepalGrad más abajo): va de la
+    // garganta (0%) hacia la punta (100%), así que `outerBase` es el cuerpo
+    // del pétalo y `outerTip` el borde. Nada de blancos: acuarela dorada.
+    yellow: {
+      outerBase: '#FBCF48', // cuerpo dorado cálido
+      outerMid: '#F7B928', // oro saturado saliendo de la garganta
+      outerTip: '#FFE9A3', // punta amarillo mantequilla, suave
+      throat: '#D08A16', // ámbar cálido al centro
+      dots: '#9A4E12', // pecas marrón rojizo
+      stamen: '#C99A2E',
+      pollen: '#B85C12', // anteras color óxido
     },
   }[colorScheme];
 
