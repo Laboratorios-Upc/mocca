@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import confetti from 'canvas-confetti';
-import { Camera, Sparkles, Heart, Sun } from 'lucide-react';
+import { Camera, Sparkles, Heart, Sun, Ghost } from 'lucide-react';
 import { Buquet } from './components/Buquet';
 import type { FlowerInfo } from './components/Buquet';
 import { PollenParticles } from './components/PollenParticles';
@@ -9,11 +10,20 @@ import { PolaroidCarousel } from './components/PolaroidCarousel';
 import { CartaPropuestaModal } from './components/CartaPropuestaModal';
 import { MusicPlayerWidget } from './components/MusicPlayerWidget';
 import { RamoPrimaveraModal } from './components/RamoPrimaveraModal';
-import { useSpringEvent } from './hooks/useSpringEvent';
-import { INITIAL_PHOTOS } from './data/photos';
+import { EscenaHalloweenModal } from './components/EscenaHalloweenModal';
+import { HalloweenAmbience } from './components/HalloweenAmbience';
+import { useEventWindow } from './hooks/useEventWindow';
+import { springEvent } from './lib/springEvent';
+import { halloweenEvent } from './lib/halloweenEvent';
+import { usePhotos } from './hooks/usePhotos';
 
-/** Marca de que el ramo ya se abrió solo una vez, para no repetirlo en cada recarga. */
+/** Marcas de que cada evento ya se abrió solo una vez, para no repetirlo en cada recarga. */
 const SPRING_AUTO_OPEN_KEY = 'mocca:primavera-2026:auto-abierto';
+const HALLOWEEN_AUTO_OPEN_KEY = 'mocca:halloween-2026:auto-abierto';
+
+/** Fondo de la página según el evento encendido. */
+const FONDO_NORMAL = 'linear-gradient(135deg, #fff7ed 0%, #e0f2fe 50%, #ffe4e6 100%)';
+const FONDO_HALLOWEEN = 'linear-gradient(170deg, #150B24 0%, #2A1436 42%, #4A1E12 78%, #6B2A0E 100%)';
 
 export function App() {
   const [bloomingFlowerId, setBloomingFlowerId] = useState<string | null>(null);
@@ -23,8 +33,15 @@ export function App() {
   const [isCartaOpen, setIsCartaOpen] = useState<boolean>(false);
   const [isRamoPrimaveraOpen, setIsRamoPrimaveraOpen] = useState<boolean>(false);
 
-  // Evento del 21 de septiembre (anclado a UTC-5, no a la zona horaria del equipo)
-  const { phase: springPhase } = useSpringEvent();
+  const [isHalloweenOpen, setIsHalloweenOpen] = useState<boolean>(false);
+
+  // Eventos por fecha, anclados a UTC-5 (no a la zona horaria del dispositivo)
+  const { phase: springPhase } = useEventWindow(springEvent);
+  const { phase: halloweenPhase } = useEventWindow(halloweenEvent);
+  const esHalloween = halloweenPhase === 'live';
+
+  // Fotos reales del bucket de Supabase (antes el contador mostraba un fijo)
+  const { photos, status: photosStatus } = usePhotos();
 
   // Al entrar el 21 el ramo se despliega solo, una única vez.
   useEffect(() => {
@@ -49,6 +66,30 @@ export function App() {
 
     return () => window.clearTimeout(timerId);
   }, [springPhase]);
+
+  // Lo mismo para Halloween: se despliega solo una vez por navegador.
+  useEffect(() => {
+    if (halloweenPhase !== 'live') return;
+
+    let alreadyOpened = false;
+    try {
+      alreadyOpened = window.localStorage.getItem(HALLOWEEN_AUTO_OPEN_KEY) === '1';
+    } catch {
+      // Modo privado / storage bloqueado: mejor mostrarlo que perdérselo.
+    }
+    if (alreadyOpened) return;
+
+    const timerId = window.setTimeout(() => {
+      setIsHalloweenOpen(true);
+      try {
+        window.localStorage.setItem(HALLOWEEN_AUTO_OPEN_KEY, '1');
+      } catch {
+        // Sin storage: se volverá a abrir en la próxima visita. No es grave.
+      }
+    }, 900);
+
+    return () => window.clearTimeout(timerId);
+  }, [halloweenPhase]);
 
   // Global mouse / touch movement tracking with requestAnimationFrame throttling
   useEffect(() => {
@@ -142,7 +183,8 @@ export function App() {
         margin: 0,
         overflow: 'hidden',
         userSelect: 'none',
-        background: 'linear-gradient(135deg, #fff7ed 0%, #e0f2fe 50%, #ffe4e6 100%)',
+        background: esHalloween ? FONDO_HALLOWEEN : FONDO_NORMAL,
+        transition: 'background 1.2s ease',
       }}
       onClick={handleBackgroundClick}
     >
@@ -157,8 +199,9 @@ export function App() {
           left: '50%',
           width: '550px',
           height: '550px',
-          background:
-            'radial-gradient(circle, rgba(244,114,182,0.25) 0%, rgba(56,189,248,0.2) 50%, rgba(254,240,138,0.15) 100%)',
+          background: esHalloween
+            ? 'radial-gradient(circle, rgba(242,119,10,0.3) 0%, rgba(123,63,160,0.22) 50%, rgba(255,177,60,0.12) 100%)'
+            : 'radial-gradient(circle, rgba(244,114,182,0.25) 0%, rgba(56,189,248,0.2) 50%, rgba(254,240,138,0.15) 100%)',
           borderRadius: '9999px',
           filter: 'blur(70px)',
           pointerEvents: 'none',
@@ -167,32 +210,42 @@ export function App() {
         }}
       />
 
-      {/* Floating Pollen Particles Overlay */}
-      <PollenParticles />
+      {/* Partículas del ambiente: polen normalmente, brasas en Halloween */}
+      {esHalloween ? <HalloweenAmbience /> : <PollenParticles />}
 
       {/* --- TOP FLOATING BUTTONS BAR (FOTOS, PÉTALOS, CARTA) --- */}
       <div
         style={{
           position: 'fixed',
           top: '18px',
-          left: '50%',
-          transform: 'translateX(-50%)',
+          /* Centrado con left/right + margin auto, NO con left:50%+translateX:
+             con left:50% el navegador solo le ofrece media pantalla de ancho,
+             así que la barra envolvía en 4 filas mucho antes de hacer falta. */
+          left: 0,
+          right: 0,
+          marginInline: 'auto',
+          width: 'fit-content',
           zIndex: 100,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           flexWrap: 'wrap',
-          // En celular, con el botón de primavera, la barra ya no cabe en una línea
+          // Con varios eventos encendidos, en celular ya no cabe en una línea
           maxWidth: 'calc(100vw - 20px)',
           rowGap: '6px',
           gap: '8px',
           padding: '6px 12px',
-          backgroundColor: 'rgba(255, 255, 255, 0.85)',
+          backgroundColor: esHalloween ? 'rgba(32, 18, 44, 0.88)' : 'rgba(255, 255, 255, 0.85)',
           backdropFilter: 'blur(12px)',
           WebkitBackdropFilter: 'blur(12px)',
           borderRadius: '9999px',
-          boxShadow: '0 12px 30px -4px rgba(0, 0, 0, 0.15), 0 4px 10px -2px rgba(0, 0, 0, 0.08)',
-          border: '1px solid rgba(255, 255, 255, 0.9)',
+          boxShadow: esHalloween
+            ? '0 12px 30px -4px rgba(0, 0, 0, 0.55), 0 0 22px -6px rgba(242, 119, 10, 0.45)'
+            : '0 12px 30px -4px rgba(0, 0, 0, 0.15), 0 4px 10px -2px rgba(0, 0, 0, 0.08)',
+          border: esHalloween
+            ? '1px solid rgba(242, 119, 10, 0.4)'
+            : '1px solid rgba(255, 255, 255, 0.9)',
+          transition: 'background-color 0.8s ease, border-color 0.8s ease',
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -223,14 +276,51 @@ export function App() {
           <span>Fotos</span>
           <span
             style={{
-              padding: '2px 7px',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              minWidth: '24px',
+              height: '18px',
+              padding: '0 7px',
               borderRadius: '9999px',
               backgroundColor: 'rgba(255, 255, 255, 0.28)',
               fontSize: '11px',
               fontWeight: 800,
             }}
           >
-            {INITIAL_PHOTOS.length}
+            {photosStatus === 'ready' ? (
+              /* El número real aparece con un fundido, sin saltar de golpe */
+              <motion.span
+                key={photos.length}
+                initial={{ opacity: 0, scale: 0.6 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+              >
+                {photos.length}
+              </motion.span>
+            ) : (
+              /* Mientras cuenta las fotos: tres puntitos latiendo */
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                {[0, 1, 2].map((i) => (
+                  <motion.span
+                    key={i}
+                    animate={{ opacity: [0.3, 1, 0.3] }}
+                    transition={{
+                      duration: 1.1,
+                      repeat: Infinity,
+                      ease: 'easeInOut',
+                      delay: i * 0.18,
+                    }}
+                    style={{
+                      width: '3px',
+                      height: '3px',
+                      borderRadius: '9999px',
+                      backgroundColor: '#ffffff',
+                    }}
+                  />
+                ))}
+              </span>
+            )}
           </span>
         </button>
 
@@ -322,7 +412,45 @@ export function App() {
             }
           >
             <Sun size={15} style={{ color: springPhase === 'live' ? '#4A2B00' : '#EAB308' }} />
-            <span>{springPhase === 'live' ? 'Primavera' : 'Recuerdo'}</span>
+            {/* Ya pasado el 21, queda solo el ícono: un recuerdo discreto que
+                además libera espacio en la barra cuando hay varios eventos. */}
+            {springPhase === 'live' && <span>Primavera</span>}
+          </button>
+        )}
+
+        {/* Botón de Halloween: naranja encendido mientras dura, discreto después */}
+        {halloweenPhase !== 'before' && (
+          <button
+            id="btn-escena-halloween"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsHalloweenOpen(true);
+            }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: esHalloween ? '8px 14px' : '8px 12px',
+              borderRadius: '9999px',
+              background: esHalloween
+                ? 'linear-gradient(135deg, #F2770A 0%, #B83A05 100%)'
+                : 'rgba(40, 24, 54, 0.9)',
+              color: esHalloween ? '#FFF3DD' : '#FFB13C',
+              fontSize: '13px',
+              fontWeight: 700,
+              border: esHalloween ? 'none' : '1px solid rgba(242, 119, 10, 0.45)',
+              boxShadow: esHalloween
+                ? '0 4px 16px rgba(242, 119, 10, 0.55)'
+                : '0 2px 6px rgba(0, 0, 0, 0.25)',
+              cursor: 'pointer',
+              transition: 'transform 0.15s',
+            }}
+            onMouseDown={(e) => (e.currentTarget.style.transform = 'scale(0.95)')}
+            onMouseUp={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+            title={esHalloween ? 'Escena de Halloween 🎃' : 'Recuerdo de Halloween'}
+          >
+            <Ghost size={15} />
+            {esHalloween && <span>Jabolin</span>}
           </button>
         )}
       </div>
@@ -354,12 +482,21 @@ export function App() {
       <PolaroidCarousel
         isOpen={isCarouselOpen}
         onClose={() => setIsCarouselOpen(false)}
+        photos={photos}
+        isLoading={photosStatus === 'loading'}
       />
 
       {/* Carta Pop-up Modal con Propuesta */}
       <CartaPropuestaModal
         isOpen={isCartaOpen}
         onClose={() => setIsCartaOpen(false)}
+      />
+
+      {/* Escena de Halloween — del 27 de oct al 1 de nov (UTC-5) */}
+      <EscenaHalloweenModal
+        isOpen={isHalloweenOpen}
+        onClose={() => setIsHalloweenOpen(false)}
+        isMemory={halloweenPhase === 'after'}
       />
 
       {/* Ramo de flores amarillas — solo el 21 de septiembre (UTC-5) */}

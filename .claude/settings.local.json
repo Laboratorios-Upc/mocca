@@ -1,0 +1,29 @@
+{
+  "autoMode": {
+    "environment": [
+      "### Org-wide",
+      "**Organization**: None configured",
+      "**Cloud provider(s)**: None configured (Supabase is used as backend)",
+      "**Repository visibility**: github.com/teocchiii/mocca — personal-username remote, no CODEOWNERS/LICENSE/CI found; gh not authenticated so visibility unconfirmed; assume private",
+      "**Internal sharing / snippet hosting**: None configured — treat public paste/gist services as outside the trust boundary",
+      "**Secrets management**: .env (gitignored) holding VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY; .env.example has placeholders only",
+      "**Default / protected branches**: master, no branch protection configured — single-dev repo, direct push is routine",
+      "**CI/CD deploy targets**: None configured — no .github/workflows found",
+      "**Network posture**: None configured",
+      "**Source control**: github.com/teocchiii/mocca only",
+      "**Trusted internal domains**: None configured",
+      "**Trusted cloud buckets**: A Supabase storage bucket used for photo assets (added per commit e6e42cf: photos moved out of source into a Supabase bucket); exact bucket name lives in env vars, not committed",
+      "**Key internal services**: Supabase (src/lib/supabase.ts) — auth/storage backend for this site",
+      "**Internal package registry**: None configured (standard npm registry)",
+      "**Sensitive data locations & audiences**: Personal romantic-proposal/gift site (CartaPropuestaModal, DedicatoriaModal, PolaroidCarousel, a Supabase photo bucket) — likely personal photos and a dedication message meant only for the intended recipient, not for public posting. Audience needs confirmation.",
+      "**Data retention / declassification**: None configured",
+      "**Sensitive remote targets**: None found — fall back to default prod/production-name heuristic",
+      "**Protected deployment namespaces / environments**: None configured",
+      "**Protected IaC scopes**: None found — no IaC in this repo",
+      "### User-specific",
+      "**Primary use of Claude Code**: Frontend development (React + TypeScript + Vite) on a personal gift/proposal website with Supabase-backed photo storage",
+      "**Trusted repo**: github.com/teocchiii/mocca (this checkout) — personal project, treat as private",
+      "**Org-specific CLIs**: None configured — routine tooling is npm run dev/build/lint/preview, npx tsc -b, npx eslint (seen repeatedly in recent sessions)"
+    ]
+  }
+}

@@ -11,20 +11,22 @@ import {
   Minimize2,
 } from 'lucide-react';
 import type { PhotoItem } from '../data/photos';
-import { INITIAL_PHOTOS, fetchPhotosFromSupabase } from '../data/photos';
+import { INITIAL_PHOTOS } from '../data/photos';
 
 interface PolaroidCarouselProps {
   isOpen: boolean;
   onClose: () => void;
   photos?: PhotoItem[];
+  /** Las fotos todavía vienen en camino desde Supabase. */
+  isLoading?: boolean;
 }
 
 export const PolaroidCarousel: React.FC<PolaroidCarouselProps> = ({
   isOpen,
   onClose,
   photos = INITIAL_PHOTOS,
+  isLoading = false,
 }) => {
-  const [photoList, setPhotoList] = useState<PhotoItem[]>(photos);
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [direction, setDirection] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
@@ -32,24 +34,9 @@ export const PolaroidCarousel: React.FC<PolaroidCarouselProps> = ({
 
   const timerRef = useRef<number | null>(null);
 
-  useEffect(() => {
-    setPhotoList(photos);
-  }, [photos]);
-
-  // Carga automática desde Supabase al iniciar o abrir el carrusel
-  useEffect(() => {
-    let isMounted = true;
-    fetchPhotosFromSupabase().then((remotePhotos) => {
-      if (isMounted && remotePhotos && remotePhotos.length > 0) {
-        setPhotoList(remotePhotos);
-      }
-    });
-    return () => {
-      isMounted = false;
-    };
-  }, [isOpen]);
-
-  const totalPhotos = photoList.length;
+  // Las fotos las carga App con usePhotos y llegan por props: así el contador
+  // de la barra y el carrusel muestran siempre lo mismo, con una sola petición.
+  const totalPhotos = photos.length;
 
   const nextSlide = useCallback(() => {
     setDirection(1);
@@ -98,9 +85,68 @@ export const PolaroidCarousel: React.FC<PolaroidCarouselProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, nextSlide, prevSlide, onClose]);
 
-  const activePhoto = photoList[currentIndex] || photoList[0];
+  const activePhoto = photos[currentIndex] || photos[0];
 
   if (!isOpen) return null;
+
+  // Las fotos todavía no llegan de Supabase: un revelado bonito en vez de
+  // un carrusel vacío (y evita leer photos[0] cuando no hay nada).
+  if (totalPhotos === 0) {
+    return (
+      <div
+        style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 999,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '18px',
+          padding: '16px',
+          backgroundColor: 'rgba(15, 23, 42, 0.72)',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+        }}
+        onClick={onClose}
+      >
+        {/* Polaroid en blanco "revelándose" */}
+        <motion.div
+          animate={{ rotate: [-2.5, 2, -2.5], y: [0, -6, 0] }}
+          transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+          style={{
+            width: '150px',
+            padding: '12px 12px 34px',
+            backgroundColor: '#ffffff',
+            borderRadius: '4px',
+            boxShadow: '0 20px 40px -12px rgba(0,0,0,0.5)',
+          }}
+        >
+          <motion.div
+            animate={{ opacity: [0.25, 0.6, 0.25] }}
+            transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
+            style={{
+              width: '100%',
+              aspectRatio: '1 / 1',
+              borderRadius: '2px',
+              background: 'linear-gradient(135deg, #cbd5e1 0%, #e2e8f0 50%, #cbd5e1 100%)',
+            }}
+          />
+        </motion.div>
+
+        <span
+          style={{
+            fontFamily: "'Caveat', cursive, sans-serif",
+            fontSize: '24px',
+            color: '#f8fafc',
+            textShadow: '0 2px 12px rgba(0,0,0,0.4)',
+          }}
+        >
+          {isLoading ? 'Revelando las fotitos…' : 'Todavía no hay fotos acá'}
+        </span>
+      </div>
+    );
+  }
 
   // Slide animation variants for Polaroid cards
   const slideVariants: Variants = {
@@ -508,7 +554,7 @@ export const PolaroidCarousel: React.FC<PolaroidCarouselProps> = ({
               padding: '4px 0',
             }}
           >
-            {photoList.map((photo, idx) => {
+            {photos.map((photo, idx) => {
               const isActive = idx === currentIndex;
               return (
                 <button
