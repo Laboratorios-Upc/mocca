@@ -35,10 +35,17 @@ export function App() {
 
   const [isHalloweenOpen, setIsHalloweenOpen] = useState<boolean>(false);
 
+  /**
+   * Pasado el 1 de noviembre el ambiente se apaga solo, pero al tocar el botón
+   * de Halloween lo volvemos a encender: el fondo oscuro, las calabazas, las
+   * velas y los pokémon regresan junto con la escena.
+   */
+  const [halloweenRevivido, setHalloweenRevivido] = useState<boolean>(false);
+
   // Eventos por fecha, anclados a UTC-5 (no a la zona horaria del dispositivo)
   const { phase: springPhase } = useEventWindow(springEvent);
   const { phase: halloweenPhase } = useEventWindow(halloweenEvent);
-  const esHalloween = halloweenPhase === 'live';
+  const esHalloween = halloweenPhase === 'live' || halloweenRevivido;
 
   // Fotos reales del bucket de Supabase (antes el contador mostraba un fijo)
   const { photos, status: photosStatus } = usePhotos();
@@ -212,6 +219,37 @@ export function App() {
 
       {/* Partículas del ambiente: polen normalmente, brasas en Halloween */}
       {esHalloween ? <HalloweenAmbience /> : <PollenParticles />}
+
+      {/* La fotito, siempre presente, como un cuadrito colgado abajo a la
+          izquierda. Va por encima del ambiente pero sin capturar clics, para
+          no romper el "clic en el fondo" que recoloca el ramo. */}
+      <motion.div
+        initial={{ opacity: 0, y: 16, rotate: -7 }}
+        animate={{ opacity: 1, y: 0, rotate: -4 }}
+        transition={{ delay: 0.8, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+        style={{
+          position: 'fixed',
+          left: 'clamp(10px, 3vw, 30px)',
+          bottom: 'clamp(104px, 15vh, 160px)',
+          width: 'clamp(88px, 20vw, 146px)',
+          zIndex: 40,
+          pointerEvents: 'none',
+          padding: '7px 7px 20px',
+          backgroundColor: esHalloween ? '#F6ECDA' : '#ffffff',
+          borderRadius: '4px',
+          boxShadow: esHalloween
+            ? '0 14px 28px -8px rgba(0,0,0,0.7), 0 0 20px -6px rgba(242,119,10,0.45)'
+            : '0 12px 26px -8px rgba(0,0,0,0.3)',
+          transition: 'background-color 0.8s ease',
+          lineHeight: 0,
+        }}
+      >
+        <img
+          src="/assets/marcia-y-mateo.webp"
+          alt=""
+          style={{ width: '100%', height: 'auto', display: 'block', borderRadius: '2px' }}
+        />
+      </motion.div>
 
       {/* --- TOP FLOATING BUTTONS BAR (FOTOS, PÉTALOS, CARTA) --- */}
       <div
@@ -424,6 +462,7 @@ export function App() {
             id="btn-escena-halloween"
             onClick={(e) => {
               e.stopPropagation();
+              setHalloweenRevivido(true);
               setIsHalloweenOpen(true);
             }}
             style={{

@@ -259,6 +259,37 @@ export const EscenaHalloweenModal: React.FC<EscenaHalloweenModalProps> = ({
               </motion.div>
             </div>
 
+            {/* La foto de los disfraces, sin texto ni pie: que hable sola.
+                Es vertical (1206x1814), así que la limitamos por alto para que
+                no estire el modal en pantallas bajitas. */}
+            <motion.div
+              initial={{ opacity: 0, y: 20, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ delay: 0.9, duration: 0.65, ease: [0.16, 1, 0.3, 1] }}
+              style={{
+                margin: '10px auto 0',
+                width: 'fit-content',
+                maxWidth: '100%',
+                borderRadius: '18px',
+                overflow: 'hidden',
+                border: '1px solid rgba(242, 119, 10, 0.4)',
+                boxShadow:
+                  '0 18px 36px -12px rgba(0, 0, 0, 0.75), 0 0 26px -8px rgba(242, 119, 10, 0.4)',
+                lineHeight: 0,
+              }}
+            >
+              <img
+                src="/assets/halloween-disfraz.jpg"
+                alt=""
+                style={{
+                  display: 'block',
+                  maxWidth: '100%',
+                  maxHeight: 'min(46vh, 380px)',
+                  width: 'auto',
+                  height: 'auto',
+                }}
+              />
+            </motion.div>
           </motion.div>
         </motion.div>
       )}
