@@ -13,13 +13,31 @@ export const MusicPlayerWidget: React.FC<MusicPlayerWidgetProps> = ({
   const [isHovered, setIsHovered] = useState<boolean>(false);
   const [volume, setVolume] = useState<number>(0.75);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const sonabaRef = useRef<boolean>(false);
+  /** El volumen vive también en una ref: así el efecto de abajo lo lee sin
+      tenerlo como dependencia (si no, recrearía el audio en cada ajuste). */
+  const volumenRef = useRef<number>(0.75);
 
   // Initialize audio element (OFF by default)
   useEffect(() => {
-    const audio = new Audio(src);
+    const audio = new Audio();
     audio.loop = true;
-    audio.volume = volume;
+    audio.volume = volumenRef.current;
+    /* preload 'none': sin esto el navegador se baja la pista entera al cargar
+       la página aunque nadie le dé play, y la de navidad pesa 26 MB. */
+    audio.preload = 'none';
+    audio.src = src;
+
+    // Si la pista cambia (por ejemplo al entrar el modo navideño) mientras
+    // sonaba, seguimos sonando con la nueva en vez de quedarnos mudos.
+    const seguiaSonando = sonabaRef.current;
     audioRef.current = audio;
+
+    if (seguiaSonando) {
+      audio.play().catch(() => {
+        setIsPlaying(false);
+      });
+    }
 
     return () => {
       audio.pause();
@@ -27,8 +45,15 @@ export const MusicPlayerWidget: React.FC<MusicPlayerWidgetProps> = ({
     };
   }, [src]);
 
+  // Espejo de isPlaying para leerlo dentro del efecto de arriba sin re-crear
+  // el audio cada vez que se pausa o se reanuda.
+  useEffect(() => {
+    sonabaRef.current = isPlaying;
+  }, [isPlaying]);
+
   // Update volume
   useEffect(() => {
+    volumenRef.current = volume;
     if (audioRef.current) {
       audioRef.current.volume = volume;
     }

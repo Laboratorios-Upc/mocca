@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import confetti from 'canvas-confetti';
-import { Camera, Sparkles, Heart, Sun, Ghost } from 'lucide-react';
+import { Camera, Sparkles, Heart, Sun, Ghost, TreePine, Plane } from 'lucide-react';
 import { Buquet } from './components/Buquet';
 import type { FlowerInfo } from './components/Buquet';
 import { PollenParticles } from './components/PollenParticles';
@@ -12,18 +12,24 @@ import { MusicPlayerWidget } from './components/MusicPlayerWidget';
 import { RamoPrimaveraModal } from './components/RamoPrimaveraModal';
 import { EscenaHalloweenModal } from './components/EscenaHalloweenModal';
 import { HalloweenAmbience } from './components/HalloweenAmbience';
+import { NavidadAmbience } from './components/NavidadAmbience';
+import { TrackerViajeModal } from './components/TrackerViajeModal';
 import { useEventWindow } from './hooks/useEventWindow';
 import { springEvent } from './lib/springEvent';
 import { halloweenEvent } from './lib/halloweenEvent';
+import { christmasEvent } from './lib/christmasEvent';
+import { viajeEvent } from './lib/viajeEvent';
 import { usePhotos } from './hooks/usePhotos';
 
 /** Marcas de que cada evento ya se abrió solo una vez, para no repetirlo en cada recarga. */
 const SPRING_AUTO_OPEN_KEY = 'mocca:primavera-2026:auto-abierto';
 const HALLOWEEN_AUTO_OPEN_KEY = 'mocca:halloween-2026:auto-abierto';
+const VIAJE_AUTO_OPEN_KEY = 'mocca:viaje-2026:auto-abierto';
 
 /** Fondo de la página según el evento encendido. */
 const FONDO_NORMAL = 'linear-gradient(135deg, #fff7ed 0%, #e0f2fe 50%, #ffe4e6 100%)';
 const FONDO_HALLOWEEN = 'linear-gradient(170deg, #150B24 0%, #2A1436 42%, #4A1E12 78%, #6B2A0E 100%)';
+const FONDO_NAVIDAD = 'linear-gradient(170deg, #091A30 0%, #103150 38%, #14453F 72%, #1B5137 100%)';
 
 export function App() {
   const [bloomingFlowerId, setBloomingFlowerId] = useState<string | null>(null);
@@ -41,11 +47,34 @@ export function App() {
    * velas y los pokémon regresan junto con la escena.
    */
   const [halloweenRevivido, setHalloweenRevivido] = useState<boolean>(false);
+  /** Lo mismo para Navidad, cuando pase el 27 de diciembre. */
+  const [navidadRevivida, setNavidadRevivida] = useState<boolean>(false);
+
+  const [isViajeOpen, setIsViajeOpen] = useState<boolean>(false);
 
   // Eventos por fecha, anclados a UTC-5 (no a la zona horaria del dispositivo)
   const { phase: springPhase } = useEventWindow(springEvent);
   const { phase: halloweenPhase } = useEventWindow(halloweenEvent);
-  const esHalloween = halloweenPhase === 'live' || halloweenRevivido;
+  const { phase: navidadPhase } = useEventWindow(christmasEvent);
+  // El tracker del viaje no existe hasta el 13 de diciembre
+  const { phase: viajePhase } = useEventWindow(viajeEvent);
+
+  /**
+   * Solo puede haber un tema a la vez. Gana siempre el que el usuario encendió
+   * a mano; si no, el que esté dentro de su ventana de fechas.
+   */
+  const tema: 'halloween' | 'navidad' | null = halloweenRevivido
+    ? 'halloween'
+    : navidadRevivida
+      ? 'navidad'
+      : navidadPhase === 'live'
+        ? 'navidad'
+        : halloweenPhase === 'live'
+          ? 'halloween'
+          : null;
+
+  const esHalloween = tema === 'halloween';
+  const esNavidad = tema === 'navidad';
 
   // Fotos reales del bucket de Supabase (antes el contador mostraba un fijo)
   const { photos, status: photosStatus } = usePhotos();
@@ -73,6 +102,30 @@ export function App() {
 
     return () => window.clearTimeout(timerId);
   }, [springPhase]);
+
+  // El 13 de diciembre el tracker se abre solo, una única vez.
+  useEffect(() => {
+    if (viajePhase !== 'live') return;
+
+    let yaAbierto = false;
+    try {
+      yaAbierto = window.localStorage.getItem(VIAJE_AUTO_OPEN_KEY) === '1';
+    } catch {
+      // Modo privado / storage bloqueado: mejor mostrarlo que perdérselo.
+    }
+    if (yaAbierto) return;
+
+    const timerId = window.setTimeout(() => {
+      setIsViajeOpen(true);
+      try {
+        window.localStorage.setItem(VIAJE_AUTO_OPEN_KEY, '1');
+      } catch {
+        // Sin storage: se volverá a abrir en la próxima visita. No es grave.
+      }
+    }, 900);
+
+    return () => window.clearTimeout(timerId);
+  }, [viajePhase]);
 
   // Lo mismo para Halloween: se despliega solo una vez por navegador.
   useEffect(() => {
@@ -190,7 +243,7 @@ export function App() {
         margin: 0,
         overflow: 'hidden',
         userSelect: 'none',
-        background: esHalloween ? FONDO_HALLOWEEN : FONDO_NORMAL,
+        background: esHalloween ? FONDO_HALLOWEEN : esNavidad ? FONDO_NAVIDAD : FONDO_NORMAL,
         transition: 'background 1.2s ease',
       }}
       onClick={handleBackgroundClick}
@@ -208,7 +261,9 @@ export function App() {
           height: '550px',
           background: esHalloween
             ? 'radial-gradient(circle, rgba(242,119,10,0.3) 0%, rgba(123,63,160,0.22) 50%, rgba(255,177,60,0.12) 100%)'
-            : 'radial-gradient(circle, rgba(244,114,182,0.25) 0%, rgba(56,189,248,0.2) 50%, rgba(254,240,138,0.15) 100%)',
+            : esNavidad
+              ? 'radial-gradient(circle, rgba(120,190,255,0.26) 0%, rgba(76,194,102,0.18) 50%, rgba(245,197,66,0.12) 100%)'
+              : 'radial-gradient(circle, rgba(244,114,182,0.25) 0%, rgba(56,189,248,0.2) 50%, rgba(254,240,138,0.15) 100%)',
           borderRadius: '9999px',
           filter: 'blur(70px)',
           pointerEvents: 'none',
@@ -217,29 +272,34 @@ export function App() {
         }}
       />
 
-      {/* Partículas del ambiente: polen normalmente, brasas en Halloween */}
-      {esHalloween ? <HalloweenAmbience /> : <PollenParticles />}
+      {/* Partículas del ambiente: brasas en Halloween, nieve en Navidad, polen el resto del año */}
+      {esHalloween ? <HalloweenAmbience /> : esNavidad ? <NavidadAmbience /> : <PollenParticles />}
 
       {/* La fotito, siempre presente, como un cuadrito colgado abajo a la
           izquierda. Va por encima del ambiente pero sin capturar clics, para
           no romper el "clic en el fondo" que recoloca el ramo. */}
       <motion.div
-        initial={{ opacity: 0, y: 16, rotate: -7 }}
-        animate={{ opacity: 1, y: 0, rotate: -4 }}
+        initial={{ opacity: 0, y: 16, rotate: 7 }}
+        animate={{ opacity: 1, y: 0, rotate: 4 }}
         transition={{ delay: 0.8, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
         style={{
           position: 'fixed',
-          left: 'clamp(10px, 3vw, 30px)',
-          bottom: 'clamp(104px, 15vh, 160px)',
+          /* A la derecha, por encima del widget de música. El margen inferior
+             deja libre el popup del volumen, que se despliega hacia arriba
+             desde el widget (botón + hueco + panel ≈ 142 px). */
+          right: 'clamp(10px, 3vw, 28px)',
+          bottom: 'clamp(166px, 23vh, 205px)',
           width: 'clamp(88px, 20vw, 146px)',
           zIndex: 40,
           pointerEvents: 'none',
           padding: '7px 7px 20px',
-          backgroundColor: esHalloween ? '#F6ECDA' : '#ffffff',
+          backgroundColor: esHalloween ? '#F6ECDA' : esNavidad ? '#F4FAFF' : '#ffffff',
           borderRadius: '4px',
           boxShadow: esHalloween
             ? '0 14px 28px -8px rgba(0,0,0,0.7), 0 0 20px -6px rgba(242,119,10,0.45)'
-            : '0 12px 26px -8px rgba(0,0,0,0.3)',
+            : esNavidad
+              ? '0 14px 28px -8px rgba(0,0,0,0.6), 0 0 20px -6px rgba(150,210,255,0.4)'
+              : '0 12px 26px -8px rgba(0,0,0,0.3)',
           transition: 'background-color 0.8s ease',
           lineHeight: 0,
         }}
@@ -251,7 +311,7 @@ export function App() {
         />
       </motion.div>
 
-      {/* --- TOP FLOATING BUTTONS BAR (FOTOS, PÉTALOS, CARTA) --- */}
+      {/* --- TOP FLOATING BUTTONS BAR --- */}
       <div
         style={{
           position: 'fixed',
@@ -492,6 +552,75 @@ export function App() {
             {esHalloween && <span>Jabolin</span>}
           </button>
         )}
+
+        {/* Botón de Navidad: encendido durante diciembre, discreto después */}
+        {navidadPhase !== 'before' && (
+          <button
+            id="btn-tema-navidad"
+            onClick={(e) => {
+              e.stopPropagation();
+              setNavidadRevivida(true);
+              setHalloweenRevivido(false);
+            }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: esNavidad ? '8px 14px' : '8px 12px',
+              borderRadius: '9999px',
+              background: esNavidad
+                ? 'linear-gradient(135deg, #2F7A3C 0%, #16513C 100%)'
+                : 'rgba(18, 40, 36, 0.9)',
+              color: esNavidad ? '#EAFBEF' : '#8FE3A8',
+              fontSize: '13px',
+              fontWeight: 700,
+              border: esNavidad ? 'none' : '1px solid rgba(143, 227, 168, 0.4)',
+              boxShadow: esNavidad
+                ? '0 4px 16px rgba(47, 122, 60, 0.5)'
+                : '0 2px 6px rgba(0, 0, 0, 0.25)',
+              cursor: 'pointer',
+              transition: 'transform 0.15s',
+            }}
+            onMouseDown={(e) => (e.currentTarget.style.transform = 'scale(0.95)')}
+            onMouseUp={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+            title={esNavidad ? 'Navidad' : 'Volver a encender la Navidad'}
+          >
+            <TreePine size={15} />
+            {esNavidad && <span>Navidad</span>}
+          </button>
+        )}
+
+        {/* Botón del viaje: recién existe desde el 13 de diciembre */}
+        {viajePhase === 'live' && (
+          <button
+            id="btn-tracker-viaje"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsViajeOpen(true);
+            }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '8px 14px',
+              borderRadius: '9999px',
+              background: 'linear-gradient(135deg, #38BDF8 0%, #0369A1 100%)',
+              color: '#F0F9FF',
+              fontSize: '13px',
+              fontWeight: 700,
+              border: 'none',
+              boxShadow: '0 4px 16px rgba(56, 189, 248, 0.45)',
+              cursor: 'pointer',
+              transition: 'transform 0.15s',
+            }}
+            onMouseDown={(e) => (e.currentTarget.style.transform = 'scale(0.95)')}
+            onMouseUp={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+            title="El viaje"
+          >
+            <Plane size={15} />
+            <span>Viaje</span>
+          </button>
+        )}
       </div>
 
       {/* Main Interactive Bouquet Canvas - Centered Full Screen */}
@@ -531,6 +660,9 @@ export function App() {
         onClose={() => setIsCartaOpen(false)}
       />
 
+      {/* Tracker del viaje — desde el 13 de diciembre */}
+      <TrackerViajeModal isOpen={isViajeOpen} onClose={() => setIsViajeOpen(false)} />
+
       {/* Escena de Halloween — del 27 de oct al 1 de nov (UTC-5) */}
       <EscenaHalloweenModal
         isOpen={isHalloweenOpen}
@@ -546,7 +678,12 @@ export function App() {
       />
 
       {/* Floating Background Music Widget (Esquina inferior derecha - apagado por defecto) */}
-      <MusicPlayerWidget src="/assets/audio/pista.mp3" />
+      {/* En modo navideño suena el zumbido de las luces antiguas; el resto
+          del año, la pista de siempre. El widget cambia de pista sin cortarse
+          si ya estaba sonando. */}
+      <MusicPlayerWidget
+        src={esNavidad ? '/assets/audio/luces-navidad.m4a' : '/assets/audio/pista.mp3'}
+      />
     </div>
   );
 }
